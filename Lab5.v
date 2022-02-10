@@ -1,0 +1,141 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 02/09/2022 02:38:49 PM
+// Design Name: 
+// Module Name: Lab5
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Lab5(
+    input RST,
+    input INTR,
+    input [31:0] IOBUS_IN,
+    input clk,
+    output IOBUS_WR,
+    output [31:0] IOBUS_OUT,
+    output [31:0] IOBUS_ADDR
+    );
+    
+    //pc_mod ports
+    wire reset;
+    wire PCWrite;
+    wire [1:0] pcSource;
+    wire [31:0] jalr;
+    wire [31:0] branch;
+    wire [31:0] jal;
+    wire [31:0] PC;
+    
+    //memory ports
+    wire [31:0] ir; //mem out
+    wire [31:0] d_out2; //mem dout2
+    
+    //reg_file ports
+    wire [31:0] wd;
+    wire [31:0] regWrite;
+    wire [31:0] rs1_out; //reg_file output
+    wire [31:0] rs2_out; //reg_file output
+    
+    //ALU ports
+    wire alu_srcA;
+    wire [1:0] alu_srcB;
+    wire [3:0] alu_fun;
+    wire [31:0] result;
+    wire [31:0] srcA;
+    wire [31:0] srcB;
+    
+    //IMMED_GEN ports
+    wire [31:0] U_type;
+    wire [31:0] S_type;
+    wire [31:0] I_type;
+    wire [31:0] J_type;
+    wire [31:0] B_type;
+    
+  PC_MOD pc_mod(
+        .clk(clk), 
+        .clr(reset), 
+        .pcWrite(PCWrite), 
+        .jalr(jalr), 
+        .branch(branch), 
+        .jal(jal), 
+        .pcSource(pcSource), 
+        .data_out(PC) );
+  
+   //The memory containing instruction in machine code 
+   Memory OTTER_MEMORY ( 
+        .MEM_CLK (clk), 
+        .MEM_RDEN1 (1'b1), 
+        .MEM_RDEN2 (1'b0), 
+        .MEM_WE2 (1'b0), 
+        .MEM_ADDR1 (PC[15:2]), // 14-bit signal from pc 
+        .MEM_ADDR2 (result), //from ALU 
+        .MEM_DIN2 (32'd0), 
+        .MEM_SIZE (ir[13:12]), //from mem_dout
+        .MEM_SIGN (ir[14]), //from mem_dout
+        .IO_IN (IOBUS_IN), //module input 
+        .IO_WR (IOBUS_WR), //module output
+        .MEM_DOUT1(ir), // 32-bit signal 
+        .MEM_DOUT2 ());
+        
+  mux_4t1_nb  #(.n(32)) my_4t1_mux_reg_file  (
+       .SEL   (rf_wr_sel), 
+       .D0    (PC + 4), 
+       .D1    (), //interupt
+       .D2    (d_out2), 
+       .D3    (result), //from ALU
+       .D_OUT (wd) ); 
+    
+  RegFile my_regfile (
+    .wd   (wd),
+    .clk  (clk), 
+    .en   (regWrite),
+    .adr1 (ir[19:15]),
+    .adr2 (ir[24:20]),
+    .wa   (ir[11:7]),
+    .rs1  (rs1_out), 
+    .rs2  (rs2_out)  );
+  
+  //IMMED_GEN & BRANCH_ADDR_GEN
+    //IMMED_GEN
+        //U-type immediate
+        assign U_type = {ir[31:12], 12'b000000000000};
+
+        //I-type immediate
+        assign I_type = {{21{ir[31]}} , ir[30:25], ir[24:20]};
+
+        //S-type immediate
+        assign S_type = {{21{ir[31]}}, ir[30:25], ir[11:7]};
+
+        //J-type immediate
+        assign J_type = {{12{ir[31]}}, ir[19:12], ir[20], ir[30:21], 1'b0};
+
+        //B-type immediate
+        assign B_type = {{20{ir[31]}}, ir[7], ir[30:25], ir[11:8], 1'b0};
+    //BRANCH_ADDR_GEN
+    //Jump and branching address
+        assign jal = PC + J_type;
+        assign jalr = PC + I_type; 
+        assign branch = PC + B_type;
+
+  
+  //ALU section
+  mux_2t1_nb  #(.n(32)) my_2t1_mux_ALU  (
+       .SEL   (alu_srcA), 
+       .D0    (rs1_out), 
+       .D1    (U_type), 
+       .D_OUT (srcA) );
+       
+  mux_4t1_nb  #(.n(32)) my_4t1_mux_ALU  (
+       .SEL   (alu_srcB), 
+       .D0    (rs2_out), 
+       .D1    (I_type), 
+       .D2    (S_type), 
+       .D3    (PC),
+       .D_OUT (srcB));
+        
+  ALU ALU(.OP_1(srcA), .OP_2(srcB), .alu_fun(alu_fun), .result(result));
+  assign IOBUS_ADDR = result;
+    
+endmodule
