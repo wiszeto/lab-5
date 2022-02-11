@@ -114,7 +114,6 @@ module CU_DCDR(
 				alu_fun = 4'b0000; 
 				alu_srcA = 1'b0; 
 				alu_srcB = 2'b10; 
-				rf_wr_sel = 2'b11; 
 			end
 			
 			OP_IMM:
