@@ -98,10 +98,11 @@ module CU_FSM(
                 NS = st_FET; 
             end
 
-            st_FET: //waiting state 
+            st_FET: 
+            begin//waiting state 
                 //setting everything to zero
                 pcWrite = 1'b0;    
-                regWrite = 1'b0;    
+                regWrite = 1'b0;
 		        memWE2 = 1'b0;     
                 memRDEN2 = 1'b0;
                 
@@ -140,21 +141,22 @@ module CU_FSM(
 					LUI: 
 					   begin
                           pcWrite = 1'b1;
-                          regWrite = 1'b0;					      
+                          regWrite = 1'b1;					      
 					      NS = st_FET;
 					   end
 					  
 					OP_IMM:  // addi 
 					   begin
                           pcWrite = 1'b1;
-					      regWrite = 1'b0;	
+					      regWrite = 1'b1;	
 					      NS = st_FET;
 					   end
 					
 	                JAL: 
 					   begin
                           pcWrite = 1'b1;
-					      regWrite = 1'b0; 
+					      regWrite = 1'b1; 
+                          memRDEN2 = 1'b0;
 					      NS = st_FET;
 					   end
 					 

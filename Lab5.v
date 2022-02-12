@@ -31,10 +31,13 @@ module Lab5(
     //memory ports
     wire [31:0] ir; //mem out
     wire [31:0] d_out2; //mem dout2
+    wire memRDEN1;
+    wire memRDEN2;
     
     //reg_file ports
+    wire [1:0] rf_wr_sel;
     wire [31:0] wd;
-    wire [31:0] regWrite;
+    wire regWrite;
     wire [31:0] rs1_out; //reg_file output
     wire [31:0] rs2_out; //reg_file output
     
@@ -66,18 +69,18 @@ module Lab5(
    //The memory containing instruction in machine code 
    Memory OTTER_MEMORY ( 
         .MEM_CLK (clk), 
-        .MEM_RDEN1 (1'b1), 
-        .MEM_RDEN2 (1'b0), 
-        .MEM_WE2 (1'b0), 
+        .MEM_RDEN1 (memRDEN1), // from fsm
+        .MEM_RDEN2 (memRDEN2), //  from fsm
+        .MEM_WE2 (memWE2), // from fsm
         .MEM_ADDR1 (PC[15:2]), // 14-bit signal from pc 
         .MEM_ADDR2 (result), //from ALU 
-        .MEM_DIN2 (32'd0), 
+        .MEM_DIN2 (rs2_out), // from reg_file
         .MEM_SIZE (ir[13:12]), //from mem_dout
         .MEM_SIGN (ir[14]), //from mem_dout
         .IO_IN (IOBUS_IN), //module input 
         .IO_WR (IOBUS_WR), //module output
         .MEM_DOUT1(ir), // 32-bit signal 
-        .MEM_DOUT2 ());
+        .MEM_DOUT2 (d_out2));
         
   mux_4t1_nb  #(.n(32)) my_4t1_mux_reg_file  (
        .SEL   (rf_wr_sel), 
@@ -96,6 +99,8 @@ module Lab5(
     .wa   (ir[11:7]),
     .rs1  (rs1_out), 
     .rs2  (rs2_out)  );
+    
+  assign IOBUS_OUT = rs2_out;
   
   //IMMED_GEN & BRANCH_ADDR_GEN
     //IMMED_GEN
@@ -113,10 +118,11 @@ module Lab5(
 
         //B-type immediate
         assign B_type = {{20{ir[31]}}, ir[7], ir[30:25], ir[11:8], 1'b0};
-    //BRANCH_ADDR_GEN
+    
+  //BRANCH_ADDR_GEN
     //Jump and branching address
         assign jal = PC + J_type;
-        assign jalr = PC + I_type; 
+        assign jalr = rs1_out + I_type; 
         assign branch = PC + B_type;
 
   
@@ -135,7 +141,34 @@ module Lab5(
        .D3    (PC),
        .D_OUT (srcB));
         
-  ALU ALU(.OP_1(srcA), .OP_2(srcB), .alu_fun(alu_fun), .result(result));
+  ALU ALU(.OP_1(srcA), 
+       .OP_2(srcB), 
+       .alu_fun(alu_fun), 
+       .result(result));
+  
+  CU_DCDR decoder(.br_eq(), 
+	   .br_lt(), 
+	   .br_ltu(),
+       .opcode(ir[6:0]),
+	   .func7(ir[30]),          
+       .func3(ir[14:12]),    
+       .alu_fun(alu_fun),
+       .pcSource(pcSource),
+       .alu_srcA(alu_srcA),
+       .alu_srcB(alu_srcB), 
+	   .rf_wr_sel(rf_wr_sel)   );
+	   
+  CU_FSM fsm( .intr(),
+       .clk(clk),
+       .RST(RST),
+       .opcode(ir[6:0]),   
+       .pcWrite(PCWrite),
+       .regWrite(regWrite),
+       .memWE2(memWE2),
+       .memRDEN1(memRDEN1),
+       .memRDEN2(memRDEN2),
+       .reset(reset));
+  
   assign IOBUS_ADDR = result;
     
 endmodule

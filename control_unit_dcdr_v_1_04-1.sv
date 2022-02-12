@@ -89,9 +89,8 @@ module CU_DCDR(
 		case(OPCODE)
 			LUI:
 			begin
-				alu_fun = 4'b0000; 
+				alu_fun = 4'b1001; 
 				alu_srcA = 1'b1; 
-				alu_srcB = 2'b01;
 				rf_wr_sel = 2'b11; 
 			end
 			
@@ -111,6 +110,7 @@ module CU_DCDR(
 			
 			STORE:
 			begin
+				pcSource = 2'b00; 
 				alu_fun = 4'b0000; 
 				alu_srcA = 1'b0; 
 				alu_srcB = 2'b10; 
