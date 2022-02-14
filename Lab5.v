@@ -145,6 +145,11 @@ module Lab5(
        .OP_2(srcB), 
        .alu_fun(alu_fun), 
        .result(result));
+
+//branch condition generator
+assign br_eq = rs1_out == rs2_out;
+assign br_lt = ($signed(rs1_out) < $signed(rs2_out));
+assign br_ltu = rs1_out < rs2_out;
   
   CU_DCDR decoder(.br_eq(), 
 	   .br_lt(), 
