@@ -87,14 +87,20 @@ module CU_DCDR(
 		alu_srcA = 1'b0;   alu_fun  = 4'b0000;
 		
 		case(OPCODE)
-			LUI:
+			LUI: 
 			begin
 				alu_fun = 4'b1001; 
 				alu_srcA = 1'b1; 
 				rf_wr_sel = 2'b11; 
 			end
 			
-			JAL:
+			JAL:  
+			begin
+			    pcSource = 2'b01;
+				rf_wr_sel = 2'b00; 
+			end
+			
+			JALR:  
 			begin
 			    pcSource = 2'b11;
 				rf_wr_sel = 2'b00; 
@@ -102,31 +108,228 @@ module CU_DCDR(
 			
 			LOAD: 
 			begin
-				alu_fun = 4'b0000; 
-				alu_srcA = 1'b0; 
-				alu_srcB = 2'b01; 
-				rf_wr_sel = 2'b10; 
+				case(FUNC3)
+					3'b000: //instr LB
+					begin
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01; 
+						rf_wr_sel = 2'b10; 
+					end
+							
+					3'b001: //instr: LH
+					begin
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01; 
+						rf_wr_sel = 2'b10; 
+					end
+							
+					3'b010: //instr: LW
+					begin
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01; 
+						rf_wr_sel = 2'b10; 
+					end
+							
+					3'b100: //instr: LBU
+					begin
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01; 
+						rf_wr_sel = 2'b10; 
+					end
+							
+					3'b101: //instr: LHU
+					begin
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01; 
+						rf_wr_sel = 2'b10; 
+					end
+				endcase
 			end
 			
+			AUIPC: 
+			begin
+				alu_fun = 4'b0000; 
+				alu_srcA = 1'b1; 
+				alu_srcB = 2'b11; 
+				rf_wr_sel = 2'b11; 
+			end
+
 			STORE:
 			begin
-				pcSource = 2'b00; 
-				alu_fun = 4'b0000; 
-				alu_srcA = 1'b0; 
-				alu_srcB = 2'b10; 
+				case(FUNC3)
+					3'b000: //instr SB
+					begin
+						pcSource = 2'b00; 
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b10; 
+					end
+							
+					3'b001: //instr: SH
+					begin
+						pcSource = 2'b00; 
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b10; 
+					end
+							
+					3'b010: //instr: SW
+					begin
+						pcSource = 2'b00; 
+						alu_fun = 4'b0000; 
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b10; 
+					end
+				endcase
 			end
 			
-			OP_IMM:
+			BRANCH:
 			begin
 				case(FUNC3)
-					3'b000: // instr: ADDI
+					3'b000: //instr BEQ
 					begin
-						alu_fun = 4'b0000;
+						if(br_eq == 0)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+							
+					3'b001: //instr: BNE
+					begin
+						if(br_eq == 0)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+
+					3'b100: //instr: BLT
+					begin
+						if(br_lt == 0)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+
+					3'b101: // instr: BGE
+					begin
+						if(br_lt == 0)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+
+					3'b110: // instr: BLTU
+					begin
+						if(br_ltu == 1)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+
+					3'b111: // instr: BGEU
+					begin
+						if(br_ltu == 0)
+							pcSource = 2'b10;
+						else
+							pcSource = 2'b00;
+					end
+				endcase
+			end
+
+			OP_RG3:
+			begin
+				case(FUNC3)
+					3'b000: //instr ADD or SUB
+					case(func7)
+						1'b0: //instr ADD
+						begin
+							alu_fun = 4'b0001;
+							alu_srcA = 1'b0; 
+							alu_srcB = 2'b00;
+							rf_wr_sel = 2'b11;
+						end
+
+						1'b1: //instr SUB
+						begin
+							alu_fun = 4'b0001;
+							alu_srcA = 1'b0; 
+							alu_srcB = 2'b00;
+							rf_wr_sel = 2'b11;
+						end
+					endcase
+							
+					3'b001: //instr: SLL
+					begin
+						alu_fun = 4'b0001;
 						alu_srcA = 1'b0; 
-						alu_srcB = 2'b01;
-						rf_wr_sel = 2'b11; 
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b010: //instr: slt
+					begin
+						alu_fun = 4'b0001;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b011: //instr: SLTU
+					begin
+						alu_fun = 4'b0011;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b100: //instr: XOR
+					begin
+						alu_fun = 4'b0100;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b101: // instr: SRL or SRA
+					case(func7)
+						1'b0: // instr: SRL
+						begin
+							alu_fun = 4'b0101;
+							alu_srcA = 1'b0; 
+							alu_srcB = 2'b00;
+							rf_wr_sel = 2'b11;
+						end
+
+						1'b1: // instr: SRA
+						begin
+							alu_fun = 4'b1101;
+							alu_srcA = 1'b0; 
+							alu_srcB = 2'b00;
+							rf_wr_sel = 2'b11;
+						end
+					endcase
+
+					3'b110: // instr: OR
+					begin
+						alu_fun = 4'b0110;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
 					end
 					
+					3'b111: // instr: AND
+					begin
+						alu_fun = 4'b011;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b00;
+						rf_wr_sel = 2'b11;
+					end
+
 					default: 
 					begin
 						pcSource = 2'b00; 
@@ -138,6 +341,97 @@ module CU_DCDR(
 				endcase
 			end
 
+			OP_IMM:
+			begin
+				case(FUNC3)
+					3'b000: // instr: ADDI
+					begin
+						alu_fun = 4'b0000;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11; 
+					end
+					
+					3'b010: // instr: SLTI
+					begin
+						alu_fun = 4'b0010;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b011:  // instr: SLTIU
+					begin
+						alu_fun = 4'b0011;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;
+					end
+
+					3'b110: // instr: ORI
+					begin
+						alu_fun = 4'b0110;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;				
+					end
+
+					3'b100: // instr: XORI
+					begin
+						alu_fun = 4'b0100;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;	
+					end
+
+					3'b111: // instr: ANDI
+					begin
+						alu_fun = 4'b0111;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;	
+					end
+
+					3'b001: // instr: SLLI
+					begin
+						alu_fun = 4'b0001;
+						alu_srcA = 1'b0;
+						alu_srcB = 2'b01;
+						rf_wr_sel = 2'b11;	
+					end
+
+					3'b101: // SRLI or SRAI
+					begin
+					case(func7)
+						1'b0: // instr: SRLI
+						begin
+							alu_fun = 4'b0101;
+							alu_srcA = 1'b0;
+							alu_srcB = 2'b01;
+							rf_wr_sel = 2'b11;
+						end
+
+						1'b1: //instr: SRAI
+						begin
+							alu_fun = 4'b1101;
+							alu_srcA = 1'b0;
+							alu_srcB = 2'b01;
+							rf_wr_sel = 2'b11;
+						end
+					endcase
+					end
+
+					default: 
+					begin
+						pcSource = 2'b00; 
+						alu_fun = 4'b0000;
+						alu_srcA = 1'b0; 
+						alu_srcB = 2'b00; 
+						rf_wr_sel = 2'b00; 
+					end
+				endcase
+			end
+			
 			default:
 			begin
 				 pcSource = 2'b00; 
