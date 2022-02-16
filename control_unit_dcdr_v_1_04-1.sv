@@ -193,7 +193,7 @@ module CU_DCDR(
 				case(FUNC3)
 					3'b000: //instr BEQ
 					begin
-						if(br_eq == 0)
+						if(br_eq == 1)
 							pcSource = 2'b10;
 						else
 							pcSource = 2'b00;
@@ -209,7 +209,7 @@ module CU_DCDR(
 
 					3'b100: //instr: BLT
 					begin
-						if(br_lt == 0)
+						if(br_lt == 1)
 							pcSource = 2'b10;
 						else
 							pcSource = 2'b00;
