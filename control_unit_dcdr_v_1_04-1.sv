@@ -96,13 +96,13 @@ module CU_DCDR(
 			
 			JAL:  
 			begin
-			    pcSource = 2'b01;
+			    pcSource = 2'b11;
 				rf_wr_sel = 2'b00; 
 			end
 			
 			JALR:  
 			begin
-			    pcSource = 2'b11;
+			    pcSource = 2'b01;
 				rf_wr_sel = 2'b00; 
 			end
 			
@@ -248,7 +248,7 @@ module CU_DCDR(
 					case(func7)
 						1'b0: //instr ADD
 						begin
-							alu_fun = 4'b0001;
+							alu_fun = 4'b0000;
 							alu_srcA = 1'b0; 
 							alu_srcB = 2'b00;
 							rf_wr_sel = 2'b11;
@@ -256,7 +256,7 @@ module CU_DCDR(
 
 						1'b1: //instr SUB
 						begin
-							alu_fun = 4'b0001;
+							alu_fun = 4'b1000;
 							alu_srcA = 1'b0; 
 							alu_srcB = 2'b00;
 							rf_wr_sel = 2'b11;
@@ -273,7 +273,7 @@ module CU_DCDR(
 
 					3'b010: //instr: slt
 					begin
-						alu_fun = 4'b0001;
+						alu_fun = 4'b0010;
 						alu_srcA = 1'b0; 
 						alu_srcB = 2'b00;
 						rf_wr_sel = 2'b11;
@@ -324,7 +324,7 @@ module CU_DCDR(
 					
 					3'b111: // instr: AND
 					begin
-						alu_fun = 4'b011;
+						alu_fun = 4'b0111;
 						alu_srcA = 1'b0;
 						alu_srcB = 2'b00;
 						rf_wr_sel = 2'b11;
