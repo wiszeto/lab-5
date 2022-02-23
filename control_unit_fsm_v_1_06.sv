@@ -43,20 +43,24 @@ module CU_FSM(
     input intr,
     input clk,
     input RST,
+    input INTR,
     input [6:0] opcode,     // ir[6:0]
     output logic pcWrite,
     output logic regWrite,
     output logic memWE2,
     output logic memRDEN1,
     output logic memRDEN2,
-    output logic reset
+    output logic reset,
+    output logic int_taken,
+    output logic csr_WE
   );
     
     typedef  enum logic [1:0] {
        st_INIT,
 	   st_FET,
        st_EX,
-       st_WB
+       st_WB,
+       st_INTR
     }  state_type; 
     state_type  NS,PS; 
       
@@ -128,28 +132,44 @@ module CU_FSM(
                           pcWrite = 1'b1;
                           regWrite = 1'b0;
                           memWE2 = 1'b1;
-                          NS = st_FET;
+                          
+                          if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
                        end
                     
 					BRANCH: 
                        begin
                           pcWrite = 1'b1;
                           regWrite = 1'b0;
-                          NS = st_FET;
+                          
+                          if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
                        end
 					
 					LUI: 
 					   begin
                           pcWrite = 1'b1;
                           regWrite = 1'b1;					      
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					  
 					OP_IMM:  // addi 
 					   begin
                           pcWrite = 1'b1;
 					      regWrite = 1'b1;	
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					  
 					OP_RG3:  // add
@@ -157,14 +177,22 @@ module CU_FSM(
                           pcWrite = 1'b1;
 					      regWrite = 1'b1;	
                           memRDEN2 = 1'b1;
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					  
 					AUIPC: 
 					   begin
                           pcWrite = 1'b1;
 					      regWrite = 1'b1;	
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					
 	                JAL: 
@@ -172,7 +200,11 @@ module CU_FSM(
                           pcWrite = 1'b1;
 					      regWrite = 1'b1; 
                           memRDEN2 = 1'b0;
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					
 	                JALR: 
@@ -180,7 +212,11 @@ module CU_FSM(
                           pcWrite = 1'b1;
 					      regWrite = 1'b1; 
                           memRDEN2 = 1'b0;
-					      NS = st_FET;
+					      
+					      if (INTR)
+                              NS = st_INTR;
+                          else
+                             NS = st_FET;
 					   end
 					 
                     default:  
@@ -195,8 +231,20 @@ module CU_FSM(
             begin
                memRDEN2 = 1'b0;
                pcWrite = 1'b1;
-               regWrite = 1'b1; 
-               NS = st_FET;
+               regWrite = 1'b1;
+                
+               if (INTR)
+                  NS = st_INTR;
+                  
+               else
+                   NS = st_FET;
+            end
+            
+            st_INTR:
+            begin
+                csr_WE = 1'b1;
+                int_taken = 1'b1;
+                NS = st_FET;
             end
  
             default: NS = st_FET;
