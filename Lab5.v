@@ -56,13 +56,25 @@ module Lab5(
     wire [31:0] J_type;
     wire [31:0] B_type;
     
+    //CSR
+    wire [31:0] RD;
+    wire [31:0] CSR_MEPC;
+    wire [31:0] CSR_MTVEC;
+    wire CSR_MIE;
+    
+    //FSM OUT
+    wire csr_WE;
+    wire int_taken;
+    
   PC_MOD pc_mod(
         .clk(clk), 
         .clr(reset), 
-        .pcWrite(PCWrite), 
+        .pcWrite(PCWrite),
         .jalr(jalr), 
         .branch(branch), 
-        .jal(jal), 
+        .jal(jal),
+        .mtvec(CSR_MTVEC),
+        .mepc(CSR_MEPC), 
         .pcSource(pcSource), 
         .data_out(PC) );
   
@@ -85,7 +97,7 @@ module Lab5(
   mux_4t1_nb  #(.n(32)) my_4t1_mux_reg_file  (
        .SEL   (rf_wr_sel), 
        .D0    (PC + 4), 
-       .D1    (), //interupt
+       .D1    (RD), //interupt
        .D2    (d_out2), 
        .D3    (result), //from ALU
        .D_OUT (wd) ); 
@@ -150,10 +162,23 @@ module Lab5(
 assign br_eq = rs1_out == rs2_out;
 assign br_lt = ($signed(rs1_out) < $signed(rs2_out));
 assign br_ltu = rs1_out < rs2_out;
-  
-  CU_DCDR decoder(.br_eq(), 
-	   .br_lt(), 
-	   .br_ltu(),
+
+CSR csr(.CLK(clk), 
+        .RST(RST), 
+        .INT_TAKEN(int_taken),
+        .ADDR(ir[31:20]),
+        .PC(PC),
+        .WD(rs1_out),
+        .WR_EN(csr_WE),
+        .RD(RD),
+        .CSR_MEPC(CSR_MEPC),
+        .CSR_MTVEC(CSR_MTVEC),
+        .CSR_MIE(CSR_MIE) );
+        
+  CU_DCDR decoder(.br_eq(br_eq), 
+       .int_taken(int_taken),
+	   .br_lt(br_lt), 
+	   .br_ltu(br_ltu),
        .opcode(ir[6:0]),
 	   .func7(ir[30]),          
        .func3(ir[14:12]),    
@@ -162,8 +187,10 @@ assign br_ltu = rs1_out < rs2_out;
        .alu_srcA(alu_srcA),
        .alu_srcB(alu_srcB), 
 	   .rf_wr_sel(rf_wr_sel)   );
-	   
-  CU_FSM fsm( .intr(),
+
+wire intr = CSR_MIE && INTR;
+
+CU_FSM fsm(.intr(intr),
        .clk(clk),
        .RST(RST),
        .opcode(ir[6:0]),   
@@ -172,8 +199,10 @@ assign br_ltu = rs1_out < rs2_out;
        .memWE2(memWE2),
        .memRDEN1(memRDEN1),
        .memRDEN2(memRDEN2),
-       .reset(reset));
-  
-  assign IOBUS_ADDR = result;
+       .reset(reset),
+       .csr_WE(csr_WE),
+       .int_taken(int_taken) );
+
+assign IOBUS_ADDR = result;
     
 endmodule
