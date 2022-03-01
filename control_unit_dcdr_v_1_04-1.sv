@@ -38,6 +38,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module CU_DCDR(
+    input int_taken,
     input br_eq, 
 	input br_lt, 
 	input br_ltu,
@@ -60,7 +61,8 @@ module CU_DCDR(
         LOAD   = 7'b0000011,
         STORE  = 7'b0100011,
         OP_IMM = 7'b0010011,
-        OP_RG3 = 7'b0110011
+        OP_RG3 = 7'b0110011,
+        INTR =  7'b1110011
     } opcode_t;
     opcode_t OPCODE; //- define variable of new opcode type
     
@@ -83,10 +85,31 @@ module CU_DCDR(
     always_comb
     begin 
         //- schedule all values to avoid latch
-		pcSource = 2'b00;  alu_srcB = 2'b00;    rf_wr_sel = 2'b00; 
+		pcSource = 3'b000;  alu_srcB = 2'b00;    rf_wr_sel = 2'b00; 
 		alu_srcA = 1'b0;   alu_fun  = 4'b0000;
 		
+		if (int_taken)
+		begin
+		  pcSource = 3'b100;
+		  rf_wr_sel = 2'b01;
+		end
+		
 		case(OPCODE)
+		    INTR:
+		    begin
+              case(FUNC3)
+                  3'b000: //csrrw
+                  begin	        
+                      pcSource = 3'b100;
+                  end
+                  
+                  3'b001: //mret
+                  begin
+                      pcSource = 3'b101;
+                  end
+              endcase
+		    end
+			
 			LUI: 
 			begin
 				alu_fun = 4'b1001; 
